@@ -1,10 +1,33 @@
 import pandas as pd
-from gmplot import gmplot
+import gmplot
+import math
+from parser import SurveyData
 
-ascii_file_path = r"PATH"
-gga_file_path = r"PATH"
+def dms_to_decimal(dms_str):
+    parts = dms_str.split()
+    degrees = float(parts[0])
+    minutes = float(parts[1])
+    seconds = float(parts[2])
+    decimal = degrees + (minutes / 60) + (seconds / 3600)
+    return decimal
 
-# read and parse the ASCII GNSS data
+def calculate_end_point(lat, lon, heading, distance=0.001):
+    """ Calculate the end point given a starting point, heading, and distance """
+    R = 6371e3  # Radius of the Earth in meters
+    distance = distance * 1000  # Convert distance to meters
+
+    lat = math.radians(lat)
+    lon = math.radians(lon)
+    heading = math.radians(heading)
+
+    end_lat = math.asin(math.sin(lat) * math.cos(distance / R) + math.cos(lat) * math.sin(distance / R) * math.cos(heading))
+    end_lon = lon + math.atan2(math.sin(heading) * math.sin(distance / R) * math.cos(lat), math.cos(distance / R) - math.sin(lat) * math.sin(end_lat))
+
+    end_lat = math.degrees(end_lat)
+    end_lon = math.degrees(end_lon)
+
+    return end_lat, end_lon
+
 def read_gnss_data(file_path):
     coordinates = []
     with open(file_path, 'r') as file:
@@ -22,52 +45,65 @@ def read_gnss_data(file_path):
                         continue
     return coordinates
 
-# read and parse the GGA file
-def read_gga_file(file_path):
-    coordinates = []
+def read_heading_data(file_path):
+    headings = []
     with open(file_path, 'r') as file:
         for line in file:
-            if line.startswith('$GPGGA'):
+            if line.startswith("#HEADING2A"):
                 parts = line.split(',')
-                if len(parts) > 5:
+                if len(parts) > 16:
                     try:
-                        lat_deg = float(parts[2][:2])
-                        lat_min = float(parts[2][2:])
-                        lat = lat_deg + lat_min / 60.0
-                        if parts[3] == 'S':
-                            lat = -lat
-
-                        lon_deg = float(parts[4][:3])
-                        lon_min = float(parts[4][3:])
-                        lon = lon_deg + lon_min / 60.0
-                        if parts[5] == 'W':
-                            lon = -lon
-
-                        coordinates.append((lat, lon))
+                        heading = float(parts[16])
+                        headings.append(heading)
                     except (ValueError, IndexError):
                         continue
-    return coordinates
+    return headings
 
-gnss_data = read_gnss_data(ascii_file_path)
-gga_data = read_gga_file(gga_file_path)
+def plot_gnss_data(parsed_file_path, ascii_file_path, heading_file_path, api_key, output_path):
+    # Load the data from the text file using the SurveyData class
+    survey_data = SurveyData(parsed_file_path)
+    df = survey_data.get_dataframe()
 
-latitudes1 = [coord[0] for coord in gnss_data]
-longitudes1 = [coord[1] for coord in gnss_data]
+    # Extract latitude, longitude, and heading from the dataframe
+    latitudes = []
+    longitudes = []
+    headings = []
+    for index, row in df.iterrows():
+        try:
+            lat_dms = row['Latitude'].strip()
+            lon_dms = row['Longitude'].strip()
+            lat = dms_to_decimal(lat_dms)
+            lon = dms_to_decimal(lon_dms)
+            heading = float(row['Azimuth'])  # Assuming Azimuth column represents heading
+            latitudes.append(lat)
+            longitudes.append(lon)
+            headings.append(heading)
+        except KeyError:
+            continue
 
-latitudes2 = [coord[0] for coord in gga_data]
-longitudes2 = [coord[1] for coord in gga_data]
+    # Create the gmplot object
+    gmap = gmplot.GoogleMapPlotter(latitudes[0], longitudes[0], 13, apikey=api_key)
 
-api_key = 'KEY'
+    # Plot points from the ASCII file
+    ascii_coordinates = read_gnss_data(ascii_file_path)
+    ascii_latitudes = [coord[0] for coord in ascii_coordinates]
+    ascii_longitudes = [coord[1] for coord in ascii_coordinates]
 
-if latitudes1 and longitudes1:
-    gmap = gmplot.GoogleMapPlotter(latitudes1[0], longitudes1[0], 10, apikey=api_key)
+    # Plot the points from the ASCII file in red
+    gmap.scatter(ascii_latitudes, ascii_longitudes, color='red', size=40, marker=False)
 
-    # Plot the raw trajectory on the map with red dots
-    gmap.scatter(latitudes1, longitudes1, '#FF0000', size=5, marker=False)
+    # Plot points and headings from the parsed data frame in green
+    gmap.scatter(latitudes, longitudes, color='green', size=40, marker=False)
+    for lat, lon, heading in zip(latitudes, longitudes, headings):
+        end_lat, end_lon = calculate_end_point(lat, lon, heading)
+        gmap.plot([lat, end_lat], [lon, end_lon], color='green')
 
-    # Plot the postprocessed trajectory on the map with green dots
-    gmap.scatter(latitudes2, longitudes2, '#00FF00', size=5, marker=False)
+    # Extract heading information from the heading ASCII file
+    headings_from_file = read_heading_data(heading_file_path)
+    for lat, lon, heading in zip(ascii_latitudes, ascii_longitudes, headings_from_file):
+        end_lat, end_lon = calculate_end_point(lat, lon, heading)
+        gmap.plot([lat, end_lat], [lon, end_lon], color='red')
 
-    gmap.draw(r"PATH")
-else:
-    print("No valid coordinates found to plot.")
+    # Draw the map to an HTML file
+    gmap.draw(output_path)
+
