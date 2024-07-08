@@ -1,0 +1,3 @@
+[submodule "/home/tony/Otter-data-collection/steam_icp"]
+	path = /home/tony/Otter-data-collection/steam_icp
+	url = git@github.com:Tonytheiv/steam_icp.git
