@@ -1,0 +1,12 @@
+# Build output
+[Bb]uild/
+
+# Toolchain files
+
+
+# Build output artefacts
+!lib\win64\Protobuf\v3.19.4\bin
+
+# Misc
+*.log
+.vs/

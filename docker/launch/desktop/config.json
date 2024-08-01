@@ -1,0 +1,9 @@
+{
+    "dockerfile": "desktop/Dockerfile",
+    "container-name": "ros-otter-desktop",
+    "image-name": "ros:otter-desktop",
+    "base-image": "osrf/ros:noetic-desktop-full",
+    "mounts": {
+        "../..": "/home/robot"
+    }
+}

@@ -1,0 +1,9 @@
+{
+    "dockerfile": "desktop/Dockerfile",
+    "container-name": "ros2-humble",
+    "image-name": "ros:humble-desktop",
+    "base-image": "theodorenowak265/ros:humble-desktop-full-jonesy",
+    "mounts": {
+        "../..": "/home/robot"
+    }
+}
