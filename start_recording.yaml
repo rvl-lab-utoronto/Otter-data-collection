@@ -1,0 +1,27 @@
+session_name: all_sensors_record
+
+start_directory: /home/user/Otter-data-collection/sensor_ws
+
+shell_command_before:
+  - "source ./install/setup.bash"
+
+supress_history: false
+
+
+windows:
+  - window_name: ros_bag
+    panes:
+      - ros2 launch otter_ros record_all.launch.py
+      
+  - window_name: sonar
+    panes:
+      - shell_command:
+        - cd ../sonar_recording/
+        #- python3 record_sonar.py -o field_test.oculus
+        
+  - window_name: ZED_recording
+    panes:
+      - shell_command:
+        - cd ../zed_recording
+        - python3 ZED_record.py
+        

@@ -1,0 +1,24 @@
+session_name: all_sensors_ros
+
+start_directory: /home/user/Otter-data-collection/sensor_ws
+
+shell_command_before:
+  - "source ./install/setup.bash"
+
+supress_history: false
+
+
+windows:
+  - window_name: lidar
+    panes:
+      - ros2 launch ouster_ros record.launch.xml sensor_hostname:=192.168.53.60
+      
+  - window_name: radar
+    panes:
+      - shell_command:
+        - ros2 launch nav_launch launch_b_scan_extended_publisher.launch.py
+        
+  - window_name: gps
+    panes:
+      - shell_command:
+        - ros2 launch novatel_oem7_driver oem7_net.launch.py oem7_ip_addr:=192.168.53.110 oem7_port:=3005
