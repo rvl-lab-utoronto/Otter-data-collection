@@ -1,9 +1,10 @@
 {
-    "dockerfile": "desktop/Dockerfile",
+    "dockerfile": "desktop/Ros2.Dockerfile",
     "container-name": "ros2-humble",
     "image-name": "ros:humble-desktop",
-    "base-image": "theodorenowak265/ros:humble-desktop-full-jonesy",
+    "base-image": "osrf/ros:humble-desktop-full",
     "mounts": {
-        "../..": "/home/robot"
+        "../..": "/home/robot",
+        "/media/blerim/LaCie": "/home/robot/data"
     }
 }
