@@ -107,6 +107,14 @@ RUN cmake -DUSE_AMENT=OFF ..
 RUN cmake --build .
 RUN cmake --install .
 
+WORKDIR ${SOURCE_DIR}
+RUN git clone https://github.com/ENSTABretagneRobotics/oculus_driver.git
+RUN mkdir ${SOURCE_DIR}/oculus_driver/build
+WORKDIR ${SOURCE_DIR}/oculus_driver/build
+RUN cmake -DCMAKE_BUILD_TYPE=Release ..
+RUN make -j install
+WORKDIR ${SOURCE_DIR}/oculus_driver/python
+RUN pip intall -e .
 #========================================
 # EMBREE AND DEPENDENCIES
 #========================================

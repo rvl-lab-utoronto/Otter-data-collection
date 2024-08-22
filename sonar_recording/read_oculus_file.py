@@ -3,6 +3,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import argparse
+import datetime
 
 from oculus_python.files import OculusFileReader
 
@@ -20,15 +21,25 @@ if __name__ == "__main__":
 
     f = OculusFileReader(args.filename)
     msg = f.read_next_ping()
-    
+    sonar_stamps = [] 
+    count = 0
     while msg is not None:
         msg = f.read_next_ping() # this can be called several time to iterate through the pings
                                  # will return None when finished
+        count += 1
         if msg is None:
             print('File seems to be empty. Aborting.')
+            break
         #print(msg.metadata())
+        
+        timestamp_seconds = msg.timestamp_micros() / 1e6
+        formatted_timestamp = datetime.datetime.utcfromtimestamp(timestamp_seconds)
+        formatted_timestamp_str = formatted_timestamp.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+        print(formatted_timestamp_str)
+        
+        sonar_stamps.append(np.float64(msg.timestamp_micros())*1e3)
 
-        print("timestamp",           msg.timestamp())
+        print("timestamp",           formatted_timestamp_str)
         print("timestamp_micros",    msg.timestamp_micros())
         print("ping_index",          msg.ping_index())
         print("range",               msg.range())
@@ -50,32 +61,6 @@ if __name__ == "__main__":
         print('has gains   :', msg.has_gains())
         print('sample size :', msg.sample_size())
         print('ping shape  :', pingData.shape)
-        
-        _, ax = plt.subplots(1,1)
-        ax.plot(bearings,     '-o', label='bearings')
-        ax.plot(linearAngles, '-o', label='linear bearings')
-        ax.grid()
-        ax.legend()
-        ax.set_xlabel('bearing index')
-        ax.set_ylabel('bearing angle')
-
-        _, ax = plt.subplots(1,1)
-        ax.plot(gains, '-o', label='gains')
-        ax.grid()
-        ax.legend()
-        ax.set_xlabel('range index')
-        ax.set_ylabel('range gain')
-
-        _, ax = plt.subplots(1,2)
-        ax[0].imshow(rawPingData)
-        ax[0].set_ylabel('Range index')
-        ax[0].set_xlabel('Bearing index')
-        ax[0].set_title('Raw ping data')
-
-        ax[1].imshow(pingData)
-        ax[1].set_xlabel('Bearing index')
-        ax[1].set_title('Ping data rescaled with gains')
-
-        plt.show()
-        
-
+    print(sonar_stamps)        
+    sonar_stamps = np.array(sonar_stamps)
+    np.save("sonar_stamps", sonar_stamps)
