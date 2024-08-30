@@ -86,7 +86,7 @@ RUN mkdir /home/packages
 ENV SOURCE_DIR="/home/packages" 
 WORKDIR ${SOURCE_DIR}
 #VOLUME ["${SOURCE_DIR}"]
-#ADD ../../NVIDIA-OptiX-SDK-7.3.0-linux64-x86_64.sh ${SOURCE_DIR}
+ADD ../../NVIDIA-OptiX-SDK-7.3.0-linux64-x86_64.sh ${SOURCE_DIR}
 
 #========================================
 # STEAM AND DEPENDENCIES
@@ -114,7 +114,7 @@ WORKDIR ${SOURCE_DIR}/oculus_driver/build
 RUN cmake -DCMAKE_BUILD_TYPE=Release ..
 RUN make -j install
 WORKDIR ${SOURCE_DIR}/oculus_driver/python
-RUN pip intall -e .
+RUN pip install -e .
 #========================================
 # EMBREE AND DEPENDENCIES
 #========================================

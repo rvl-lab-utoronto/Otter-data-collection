@@ -4,6 +4,7 @@
     "image-name": "ros:otter-desktop",
     "base-image": "osrf/ros:noetic-desktop-full",
     "mounts": {
-        "../..": "/home/robot"
+        "../..": "/home/robot",
+        "/media/blerim/capybara2": "/home/robot"
     }
 }

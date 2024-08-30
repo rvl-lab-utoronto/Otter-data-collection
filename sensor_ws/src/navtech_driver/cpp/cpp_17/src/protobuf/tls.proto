@@ -1,8 +1,0 @@
-syntax = "proto3";
-package TLS;
-
-message TLS_settings {
-  string server_certificate    = 1;
-  string server_key            = 2;
-  string server_key_passphrase = 3;
-}

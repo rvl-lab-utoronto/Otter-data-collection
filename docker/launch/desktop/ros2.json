@@ -5,6 +5,6 @@
     "base-image": "osrf/ros:humble-desktop-full",
     "mounts": {
         "../..": "/home/robot",
-        "/media/blerim/LaCie": "/home/robot/data"
+        "/media/blerim/capybara2/": "/home/robot/data"
     }
 }
