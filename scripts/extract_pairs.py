@@ -14,10 +14,10 @@ def save_image_and_pointcloud(image_msg, pointcloud_msg, index):
     
     # Convert ROS Image message to OpenCV image
     img_array = np.frombuffer(image.data, dtype=np.uint8).reshape(image.height, image.width, -1)
-    image_cv = cv2.cvtColor(img_array, cv2.COLOR_RGB2BGR)
+    image_cv = img_array#cv2.cvtColor(img_array, cv2.COLOR)
     
     # Save image as PNG
-    image_filename = f"calib_files/images/image_{index}.png"
+    image_filename = f"calib_files/images/{index:05}.png"
     cv2.imwrite(image_filename, image_cv)
     print(f"Saved image: {image_filename}")
     
@@ -35,23 +35,30 @@ def save_image_and_pointcloud(image_msg, pointcloud_msg, index):
     pcd.points = o3d.utility.Vector3dVector(points_xyz)
     
     # Save point cloud as PCD
-    pcd_filename = f"calib_files/scans/pointcloud_{index}.pcd"
+    pcd_filename = f"calib_files/scans/{index:05}.pcd"
     o3d.io.write_point_cloud(pcd_filename, pcd)
     print(f"Saved pointcloud: {pcd_filename}")
 
-def find_closest_pairs(bag_file_path, max_pairs=500):
+def find_closest_pairs(bag_file_path, max_pairs=400):
     # Initialize ROS2 bag reader
     bag = rosbag2_py.SequentialReader()
     storage_options = rosbag2_py.StorageOptions(uri=bag_file_path, storage_id="sqlite3")
     converter_options = rosbag2_py.ConverterOptions(input_serialization_format="cdr", output_serialization_format="cdr")
     bag.open(storage_options, converter_options)
+    print("test")
 
     image_msgs = []
     pointcloud_msgs = []
 
     # Iterate through the bag and separate the messages
+    count = 0
     while bag.has_next():
         topic, data, timestamp = bag.read_next()
+        count += 1
+        if count < 300:
+            continue
+        if len(pointcloud_msgs) > 800:
+            break
         if topic == "/zed/zed_node/right_raw/image_raw_color":
             image_msgs.append((timestamp, data))
         elif topic == "/ouster/points":
@@ -75,7 +82,7 @@ def find_closest_pairs(bag_file_path, max_pairs=500):
         save_image_and_pointcloud(image_msg, pointcloud_msg, i)
 
 # Path to your ROS2 bag file
-bag_file_path = "subset"
+bag_file_path = "/home/robot/data/9_ml_lake_calib/rosbag2_2024_08_22-22_09_56"
 
 # Extract and save the closest pairs
 os.makedirs('./calib_files/images/', exist_ok=True)

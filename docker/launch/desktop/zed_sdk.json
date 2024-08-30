@@ -1,0 +1,10 @@
+{
+    "dockerfile": "desktop/zed.Dockerfile",
+    "container-name": "ros2-humble",
+    "image-name": "zed_containers:zed-sdk12.1",
+    "base-image": "stereolabs/zed:4.1-runtime-cuda12.1-ubuntu22.04",
+    "mounts": {
+        "../..": "/home/robot",
+        "/media/blerim/capybara/": "/home/robot/data"
+    }
+}

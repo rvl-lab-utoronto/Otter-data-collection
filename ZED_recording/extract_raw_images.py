@@ -15,7 +15,8 @@ def save_raw_frames(svo_file_path, num_frames=100):
     # Set initialization parameters
     init_params = sl.InitParameters()
     init_params.set_from_svo_file(svo_file_path)
-    init_params.svo_real_time_mode = False  # Disable real-time mode
+    #init_params.svo_real_time_mode = False  # Disable real-time mode
+    init_params.optional_opencv_calibration_file = "/home/blerim/Otter-data-collection/ZED_recording/SN101391084.conf"
 
     # Open the SVO file
     if zed.open(init_params) != sl.ERROR_CODE.SUCCESS:
@@ -28,6 +29,7 @@ def save_raw_frames(svo_file_path, num_frames=100):
 
     # Loop to read and save frames
     for i in range(num_frames):
+        print("test")
         if zed.grab() == sl.ERROR_CODE.SUCCESS:
             # Retrieve the timestamp
             timestamp = zed.get_timestamp(sl.TIME_REFERENCE.IMAGE).get_milliseconds()
@@ -57,5 +59,5 @@ def save_raw_frames(svo_file_path, num_frames=100):
 
 if __name__ == "__main__":
     # Specify the path to your SVO file and the number of frames to save
-    svo_file_path = "output.svo2"
+    svo_file_path = "/media/blerim/capybara2/aug_test_post_lunch.svo2"
     save_raw_frames(svo_file_path, num_frames=100)  # Adjust the number of frames as needed
