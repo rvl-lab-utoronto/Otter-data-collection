@@ -1,4 +1,5 @@
 import os
+import json
 import struct
 import rclpy
 from rclpy.serialization import deserialize_message
@@ -6,11 +7,15 @@ from rosidl_runtime_py.utilities import get_message
 import rosbag2_py
 
 from ouster.sdk import client
+from ouster.sdk.client.core import ScanBatcher, LidarPacket, LidarScan, get_field_types
 
-output_dir = "/mnt/goose"
+
+
+output_dir = "/home/robot/data/lidar_scans"
 # bag_path = "/mnt/goose/rosbag2_2024_08_22-17_32_04"
-bag_path = "/mnt/diskstation/tony/aug_16_test_utm_pond/all_sensors_utm_pond/rosbag2_2024_08_16-19_13_07"
+bag_path = "/home/robot/data/aug_22_field_data/rosbag2_2024_08_22-17_32_04"
 topic_name = "/ouster/lidar_packets"
+imu_topic_name = "/ouster/imu_packets"
 metadata_topic_name = "/ouster/metadata"
 
 os.makedirs(output_dir, exist_ok=True)
@@ -67,11 +72,24 @@ def process_lidar_packets():
         return
 
     sensor_info = client.SensorInfo(metadata_str)
+    metadata = json.loads(metadata_str)
+    packet_format = client.PacketFormat(sensor_info)
+    batch = ScanBatcher(metadata["lidar_data_format"]["columns_per_frame"], packet_format)
+    h = packet_format.pixels_per_column
+    w = metadata["lidar_data_format"]["columns_per_frame"]
+    columns_per_packet = packet_format.columns_per_packet
+    packets_per_frame = w // columns_per_packet
+    field_types = get_field_types(sensor_info)
+    
     xyzlut = initialize_xyzlut(sensor_info)
 
     # reinitialization
+
+    
     reader = rosbag2_py.SequentialReader()
     reader.open(storage_options, converter_options)
+
+
 
     # while reader.has_next():
     #     topic, data, t = reader.read_next()
@@ -116,40 +134,44 @@ def process_lidar_packets():
     #     timestamp_ns = packet.timestamp 
     #     file_path = os.path.join(output_dir, f"{timestamp_ns}.bin")
     #     write_scan_binary_file(current_scan, file_path)
-        
+    ls_write = None
+    lp = LidarPacket(packet_format.lidar_packet_size)
     while reader.has_next():
         topic, data, t = reader.read_next()
+        
         if topic == topic_name:
             msg = deserialize_message(data, lidar_packet_msg_type)
             buf = msg.buf
-            
             try:
                 ################### PROBLEMATIC LINE
-                packet = client.LidarPacket(24832)
-
-                packet = client.LidarPacket(buf) 
+                ls_write = ls_write or LidarScan(
+                    h, w, field_types, columns_per_packet)
+                
+                res = batch(buf, ls_write)
+                if res:
+                    print(ls_write)
                 ####################
 
-                if current_frame_id is None:
-                    current_frame_id = packet.frame_id
+                #if current_frame_id is None:
+                #    current_frame_id = packet.frame_id
 
-                if packet.frame_id != current_frame_id:
-                    timestamp_ns = packet.timestamp  
-                    file_path = os.path.join(output_dir, f"{timestamp_ns}.bin")
-                    write_scan_binary_file(current_scan, file_path)
-                    
-                    current_scan = []
-                    current_frame_id = packet.frame_id
+                #if packet.frame_id != current_frame_id:
+                #    timestamp_ns = packet.timestamp  
+                #    file_path = os.path.join(output_dir, f"{timestamp_ns}.bin")
+                #    write_scan_binary_file(current_scan, file_path)
+                #    
+                #    current_scan = []
+                #    current_frame_id = packet.frame_id
 
-                for m_id, timestamp, range, reflectivity, intensity, ambient in zip(
-                        packet.measurement_id, packet.timestamps, packet.ranges,
-                        packet.reflectivities, packet.intensities, packet.ambients):
-                    xyz = xyzlut(range, m_id)
-                    current_scan.append((
-                        xyz[0], xyz[1], xyz[2],
-                        intensity, timestamp,
-                        reflectivity, ambient, range))
-                print("Packet not corrupted: success")
+                #for m_id, timestamp, range, reflectivity, intensity, ambient in zip(
+                #        packet.measurement_id, packet.timestamps, packet.ranges,
+                #        packet.reflectivities, packet.intensities, packet.ambients):
+                #    xyz = xyzlut(range, m_id)
+                #    current_scan.append((
+                #        xyz[0], xyz[1], xyz[2],
+                #        intensity, timestamp,
+                #        reflectivity, ambient, range))
+                #print("Packet not corrupted: success")
                 
             except Exception as e:
                 print(f"Warning: Skipping corrupted packet. Error: {str(e)[:400]}")

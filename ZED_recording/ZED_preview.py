@@ -35,7 +35,7 @@ def preview_svo_raw_frames(svo_file_path, num_frames=100):
             cv2.imshow("Raw Left and Right Frames", combined_frame)
 
             # Exit if 'q' is pressed
-            if cv2.waitKey(10) & 0xFF == ord('q'):
+            if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
         else:
             print(f"Failed to grab frame {i+1}/{num_frames}")
@@ -47,5 +47,5 @@ def preview_svo_raw_frames(svo_file_path, num_frames=100):
 
 if __name__ == "__main__":
     # Specify the path to your SVO file and the number of frames to preview
-    svo_file_path = "output.svo2"
+    svo_file_path = "./aug_test_post_lunch.svo2"
     preview_svo_raw_frames(svo_file_path, num_frames=100)  # Adjust the number of frames as needed

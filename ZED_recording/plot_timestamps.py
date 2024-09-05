@@ -1,65 +1,62 @@
 import pyzed.sl as sl
 import multiprocessing as mp
 import matplotlib.pyplot as plt
+import numpy as np
 
-def extract_timestamps(chunk):
-    svo_file_path, start_frame, end_frame = chunk
-    # Create a Camera object
+
+
+def plot_timedeltas_dir(image_dir):
+    
+    left_images = sorted([img for img in os.listdir(left_images_dir) if img.endswith(('png', 'jpg', 'jpeg'))])
+    right_images = sorted([img for img in os.listdir(right_images_dir) if img.endswith(('png', 'jpg', 'jpeg'))])
+    
+    if len(left_images) != len(right_images):
+        print("The number of images in both directories must be the same.")
+        exit()
+
+
+def plot_timedeltas(svo_file_path):
     zed = sl.Camera()
-
-    # Set initialization parameters
     init_params = sl.InitParameters()
     init_params.set_from_svo_file(svo_file_path)
     init_params.svo_real_time_mode = False  # Disable real-time mode
-
-    # Open the SVO file
-    if zed.open(init_params) != sl.ERROR_CODE.SUCCESS:
-        return []
-
-    # Seek to the start frame
-    zed.set_svo_position(start_frame)
-    
-    # List to store timestamps
-    timestamps = []
-    
-    for _ in range(end_frame - start_frame):
-        if zed.grab() == sl.ERROR_CODE.SUCCESS:
-            # Retrieve the timestamp
-            timestamp = zed.get_timestamp(sl.TIME_REFERENCE.IMAGE).get_milliseconds()
-            timestamps.append(timestamp)
-        else:
-            break
-
-    zed.close()
-    return timestamps
-
-def plot_timedeltas_parallel(svo_file_path, num_processes=4):
-    # Create a Camera object to get the total number of frames
-    zed = sl.Camera()
-    init_params = sl.InitParameters()
-    init_params.set_from_svo_file(svo_file_path)
     if zed.open(init_params) != sl.ERROR_CODE.SUCCESS:
         print("Failed to open SVO file.")
         return
     total_frames = zed.get_svo_number_of_frames()
-    print(total_frames)
-    zed.close()
+    timestamps = [] 
+    left_image = sl.Mat()
+    right_image = sl.Mat()
+    num_frames = 10000
+    count = 0
+    while count < num_frames:
+        if zed.grab() == sl.ERROR_CODE.SUCCESS:
+            # Retrieve the timestamp
 
-    # Split the frames into chunks for parallel processing
-    total_frames = 10
-    chunk_size = total_frames // num_processes
-    chunks = [(svo_file_path, i, min(i + chunk_size, total_frames)) for i in range(0, total_frames, chunk_size)]
+            #zed.retrieve_image(left_image, sl.VIEW.LEFT_UNRECTIFIED)
+            #zed.retrieve_image(right_image, sl.VIEW.RIGHT_UNRECTIFIED)  
+            
+            timestamp_left = zed.get_timestamp(sl.TIME_REFERENCE.IMAGE).get_microseconds()
+            timestamp_right = zed.get_timestamp(sl.TIME_REFERENCE.IMAGE).get_microseconds()
+            timestamps.append(timestamp_left)
+            #print(str(timestamp_left) + "  |   " +  str(timestamp_right)) 
+            #left_filename = os.path.join(root, left_dir, f"{timestamp}.png")
+            #right_filename = os.path.join(root, right_dir, f"{timestamp}.png")
+            #depth_filename = os.path.join(root, depth_dir, f"{timestamp}.png")
+            
+            #cv2.imwrite(left_filename, left_frame)
+            #cv2.imwrite(right_filename, right_frame)
+ 
+            #cv2.imwrite(depth_filename, depth_frame)
+            count += 1
 
-    # Use multiprocessing to extract timestamps in parallel
-    with mp.Pool(processes=num_processes) as pool:
-        results = pool.map(extract_timestamps, chunks)
-
-    # Flatten the list of lists into a single list of timestamps
-    timestamps = [timestamp for sublist in results for timestamp in sublist]
-
-    # Calculate time deltas between consecutive frames
-    time_deltas = [j-i for i, j in zip(timestamps[:-1], timestamps[1:])]
-
+        else:
+            print(f"Failed to grab frame {i+1}/{num_frames}")
+            break
+        
+    timestamps = np.array(timestamps)
+    time_deltas = np.diff(timestamps)
+    print(np.max(time_deltas))
     # Plot the time deltas
     plt.figure(figsize=(10, 6))
     plt.plot(time_deltas, marker='o', linestyle='-', color='b')
@@ -71,5 +68,5 @@ def plot_timedeltas_parallel(svo_file_path, num_processes=4):
 
 if __name__ == "__main__":
     # Specify the path to your SVO file and the number of processes
-    svo_file_path = "output.svo2"
-    plot_timedeltas_parallel(svo_file_path, num_processes=4)
+    svo_file_path = "./aug_test_post_lunch.svo2"
+    plot_timedeltas(svo_file_path)
