@@ -44,11 +44,15 @@ with AnyReader([Path(args.bag)]) as reader:
         if connection.topic == '/ouster/metadata':
             msg = reader.deserialize(rawdata, connection.msgtype)
             metadata = json.loads(msg.data)
+            print(metadata)
+            #break
             sensor_info = client.SensorInfo(msg.data) 
             packet_format = client.PacketFormat(sensor_info)
             
         if connection.topic == '/ouster/lidar_packets':
             msg = reader.deserialize(rawdata, connection.msgtype)
+            if metadata is None:
+                continue
             measurement_ids = packet_format.packet_header(client.ColHeader.MEASUREMENT_ID, msg.buf)
             timestamps = packet_format.packet_header(client.ColHeader.TIMESTAMP, msg.buf)
             ranges = packet_format.packet_field(client.ChanField.RANGE, msg.buf)
@@ -59,20 +63,25 @@ with AnyReader([Path(args.bag)]) as reader:
                 last_lidar_timestamp = timestamp_s
                 #lidar_stamps.append(delta)
                 lidar_stamps.append(timestamps[0])
-                
+            
+            timestamp_ros_s = timestamp * 1e-9
             dt_object = datetime.utcfromtimestamp(timestamp_s)
 
             formatted_date = dt_object.strftime('%A, %Y-%m-%d %H:%M:%S')
 
             #print(f'  timestamps = {timestamps}')
+            #print(timestamp_s)
+            print(formatted_date)
+
             #print(f'  ranges = {ranges.shape}')
 
         if connection.topic == '/radar_data/b_scan_msg':
             msg = reader.deserialize(rawdata, connection.msgtype)
-            timestamp_ns = msg.timestamps[np.int(msg.timestamps.shape[0]/2)]
-            timestamp_s = msg.timestamps[np.int(msg.timestamps.shape[0]/2)] * 1e-9
+            timestamp_ns = msg.timestamps[np.int64(msg.timestamps.shape[0]/2)]
+            timestamp_s = msg.timestamps[np.int64(msg.timestamps.shape[0]/2)] * 1e-9
             
             radar_stamps.append(timestamp_ns)
+            #print(timestamp_ns)
             
             delta = timestamp_s - last_radar_timestamp
             #radar_stamps.append(delta)
@@ -100,7 +109,7 @@ with AnyReader([Path(args.bag)]) as reader:
         plt.legend()
         plt.show()
     
-    lidar_stamps = np.array(lidar_stamps)
-    radar_stamps = np.array(radar_stamps)
-    np.save('lidar_stamps', lidar_stamps)
-    np.save('radar_stamps', radar_stamps)
+    #lidar_stamps = np.array(lidar_stamps)
+    #radar_stamps = np.array(radar_stamps)
+    #np.save('lidar_stamps', lidar_stamps)
+    #np.save('radar_stamps', radar_stamps)

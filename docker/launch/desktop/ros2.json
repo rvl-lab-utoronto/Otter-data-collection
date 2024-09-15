@@ -5,6 +5,7 @@
     "base-image": "osrf/ros:humble-desktop-full",
     "mounts": {
         "../..": "/home/robot",
-        "/media/blerim/capybara2/": "/home/robot/data"
+        "/media/blerim/capybara2/": "/home/robot/data",
+        "/media/diskstation/": "/home/robot/synology"
     }
 }

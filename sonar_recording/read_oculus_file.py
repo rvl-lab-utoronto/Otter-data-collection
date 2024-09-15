@@ -33,22 +33,22 @@ if __name__ == "__main__":
         #print(msg.metadata())
         
         timestamp_seconds = msg.timestamp_micros() / 1e6
-        formatted_timestamp = datetime.datetime.utcfromtimestamp(timestamp_seconds)
+        formatted_timestamp = datetime.datetime.fromtimestamp(timestamp_seconds, datetime.timezone.utc)
         formatted_timestamp_str = formatted_timestamp.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
         print(formatted_timestamp_str)
         
         sonar_stamps.append(np.float64(msg.timestamp_micros())*1e3)
 
-        print("timestamp",           formatted_timestamp_str)
-        print("timestamp_micros",    msg.timestamp_micros())
-        print("ping_index",          msg.ping_index())
-        print("range",               msg.range())
-        print("gain_percent",        msg.gain_percent())
-        print("frequency",           msg.frequency())
-        print("speed_of_sound_used", msg.speed_of_sound_used())
-        print("range_resolution",    msg.range_resolution())
-        print("temperature",         msg.temperature())
-        print("pressure",            msg.pressure())
+        #print("timestamp",           formatted_timestamp_str)
+        #print("timestamp_micros",    msg.timestamp_micros())
+        #print("ping_index",          msg.ping_index())
+        #print("range",               msg.range())
+        #print("gain_percent",        msg.gain_percent())
+        #print("frequency",           msg.frequency())
+        #print("speed_of_sound_used", msg.speed_of_sound_used())
+        #print("range_resolution",    msg.range_resolution())
+        #print("temperature",         msg.temperature())
+        #print("pressure",            msg.pressure())
 
         bearings     = 0.01*np.array(msg.bearing_data())
         linearAngles = np.linspace(bearings[0], bearings[-1], len(bearings))
@@ -58,9 +58,9 @@ if __name__ == "__main__":
             gains = np.array(msg.gains())
         pingData = np.array(msg.ping_data()) / np.sqrt(gains)[:,np.newaxis]
 
-        print('has gains   :', msg.has_gains())
-        print('sample size :', msg.sample_size())
-        print('ping shape  :', pingData.shape)
+        #print('has gains   :', msg.has_gains())
+        #print('sample size :', msg.sample_size())
+        #print('ping shape  :', pingData.shape)
     print(sonar_stamps)        
     sonar_stamps = np.array(sonar_stamps)
     np.save("sonar_stamps", sonar_stamps)

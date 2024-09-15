@@ -2,6 +2,8 @@ import os
 import json
 import struct
 import rclpy
+import numpy as np
+import matplotlib.pyplot as plt
 from rclpy.serialization import deserialize_message
 from rosidl_runtime_py.utilities import get_message
 import rosbag2_py
@@ -11,9 +13,11 @@ from ouster.sdk.client.core import ScanBatcher, LidarPacket, LidarScan, get_fiel
 
 
 
-output_dir = "/home/robot/data/lidar_scans"
+output_dir = "/home/robot/synology/otter-utm/lidar"
 # bag_path = "/mnt/goose/rosbag2_2024_08_22-17_32_04"
-bag_path = "/home/robot/data/aug_22_field_data/rosbag2_2024_08_22-17_32_04"
+#bag_path = "/home/robot/data/aug_22_field_data/rosbag2_2024_08_22-17_32_04"
+bag_path = "/home/robot/synology/tony/aug_16_test_utm_pond/all_sensors_utm_pond/rosbag2_2024_08_16-19_13_07"
+#bag_path = "/home/robot/data/aug_23_field_data/rosbag2_2024_08_23-14_14_04"
 topic_name = "/ouster/lidar_packets"
 imu_topic_name = "/ouster/imu_packets"
 metadata_topic_name = "/ouster/metadata"
@@ -90,52 +94,9 @@ def process_lidar_packets():
     reader.open(storage_options, converter_options)
 
 
-
-    # while reader.has_next():
-    #     topic, data, t = reader.read_next()
-    #     if topic == topic_name:
-    #         msg = deserialize_message(data, lidar_packet_msg_type)
-
-    #         buf = msg.buf
-            
-    #         packet = client.LidarPacket(65536)  # fixed buffer size (supposedly 
-    #         # accourding to documentation)
-            
-    #         ##### PROBLEMATIC LINE
-    #         packet = client.LidarPacket(buf)
-    #         '''
-    #         need to find a way of copying buffer from packet msg to pcap packet,
-    #         now it breaks cuz size inconsistent (due to corrupted packets)
-    #         '''
-    #         ##### 
-
-    #         if current_frame_id is None:
-    #             current_frame_id = packet.frame_id
-
-    #         if packet.frame_id != current_frame_id:
-    #             # write to .bin
-    #             timestamp_ns = packet.timestamp
-    #             file_path = os.path.join(output_dir, f"{timestamp_ns}.bin")
-    #             write_scan_binary_file(current_scan, file_path)
-                
-    #             current_scan = []
-    #             current_frame_id = packet.frame_id
-
-    #         for m_id, timestamp, range, reflectivity, intensity, ambient in zip(
-    #                 packet.measurement_id, packet.timestamps, packet.ranges,
-    #                 packet.reflectivities, packet.intensities, packet.ambients):
-    #             xyz = xyzlut(range, m_id)
-    #             current_scan.append((
-    #                 xyz[0], xyz[1], xyz[2],
-    #                 intensity, timestamp,
-    #                 reflectivity, ambient, range))
-
-    # if current_scan:
-    #     timestamp_ns = packet.timestamp 
-    #     file_path = os.path.join(output_dir, f"{timestamp_ns}.bin")
-    #     write_scan_binary_file(current_scan, file_path)
     ls_write = None
     lp = LidarPacket(packet_format.lidar_packet_size)
+    count = 0
     while reader.has_next():
         topic, data, t = reader.read_next()
         
@@ -143,45 +104,44 @@ def process_lidar_packets():
             msg = deserialize_message(data, lidar_packet_msg_type)
             buf = msg.buf
             try:
-                ################### PROBLEMATIC LINE
                 ls_write = ls_write or LidarScan(
                     h, w, field_types, columns_per_packet)
                 
                 res = batch(buf, ls_write)
                 if res:
-                    print(ls_write)
-                ####################
+                    for field in ls_write.fields:
+                        print('{0:15} {1}'.format(str(field), ls_write.field(field).dtype))
+                    signal = ls_write.field(client.ChanField.SIGNAL)
+                    ranges = ls_write.field(client.ChanField.RANGE)
+                    timestamps = np.tile(ls_write.timestamp, (signal.shape[0], 1)).reshape(-1, 1)
+                    
+                    reflectivity = ls_write.field(client.ChanField.REFLECTIVITY)
+                    ambient = ls_write.field(client.ChanField.NEAR_IR)
 
-                #if current_frame_id is None:
-                #    current_frame_id = packet.frame_id
+                    ranges_destaggered = client.destagger(sensor_info, ranges).reshape(-1, 1)
+                    signal_destaggered = client.destagger(sensor_info, signal).reshape(-1, 1)
+                    reflectivity_destaggered = client.destagger(sensor_info, reflectivity).reshape(-1, 1)
+                    ambient_destaggered = client.destagger(sensor_info, ambient).reshape(-1, 1)
+                    
+                    xyz = xyzlut(ranges_destaggered)
+                    xyz = xyz.reshape(-1, 3)
+                    print("******************* NEW SCAN ******************")
+                    print("Points:",  xyz.shape, xyz.dtype)
+                    print("Intensity:", signal_destaggered.shape, signal_destaggered.dtype)
+                    print("Stamps:", timestamps.shape, timestamps.dtype)
+                    print("Reflectivity:", reflectivity_destaggered.shape, reflectivity_destaggered.dtype)
+                    print("Ambient:", ambient_destaggered.shape, ambient_destaggered.dtype)
 
-                #if packet.frame_id != current_frame_id:
-                #    timestamp_ns = packet.timestamp  
-                #    file_path = os.path.join(output_dir, f"{timestamp_ns}.bin")
-                #    write_scan_binary_file(current_scan, file_path)
-                #    
-                #    current_scan = []
-                #    current_frame_id = packet.frame_id
-
-                #for m_id, timestamp, range, reflectivity, intensity, ambient in zip(
-                #        packet.measurement_id, packet.timestamps, packet.ranges,
-                #        packet.reflectivities, packet.intensities, packet.ambients):
-                #    xyz = xyzlut(range, m_id)
-                #    current_scan.append((
-                #        xyz[0], xyz[1], xyz[2],
-                #        intensity, timestamp,
-                #        reflectivity, ambient, range))
-                #print("Packet not corrupted: success")
+                    bin_file = np.hstack([xyz, signal_destaggered, timestamps, reflectivity_destaggered, ambient_destaggered])
+                    filename = str(timestamps[timestamps.shape[0]//2][0])+".bin"
+                    filename = os.path.join(output_dir, filename)
+                    bin_file.tofile(filename)
                 
             except Exception as e:
                 print(f"Warning: Skipping corrupted packet. Error: {str(e)[:400]}")
                 print(f"Buffer size: {len(buf)} bytes")
                 continue
 
-    if current_scan:
-        timestamp_ns = packet.timestamp 
-        file_path = os.path.join(output_dir, f"{timestamp_ns}.bin")
-        write_scan_binary_file(current_scan, file_path)
 
 process_lidar_packets()
 
