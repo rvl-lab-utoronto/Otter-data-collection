@@ -6,6 +6,7 @@
     "mounts": {
         "../..": "/home/robot",
         "/media/blerim/capybara2/": "/home/robot/data",
-        "/media/diskstation/": "/home/robot/synology"
+        "/media/diskstation/": "/home/robot/synology",
+        "/home/blerim/boreas_dataset/": "/home/robot/boreas_dataset"
     }
 }
