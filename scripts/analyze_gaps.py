@@ -22,8 +22,10 @@ if __name__ == "__main__":
     print("total time of survey")
     print(np.float64(radar_stamps[len(radar_stamps)-1] - radar_stamps[0])* 1e-9)
     radar_stamp_diffs = np.diff(radar_stamps)
-    print("time missed")
-    print(np.sum(radar_stamp_diffs[radar_stamp_diffs > 1000000000] * 1e-9))
+    print(len(radar_stamp_diffs))
+    print(len(radar_stamps))
+    radar_stamps = radar_stamps[1:]
+    radar_stamps = radar_stamps[radar_stamp_diffs > 1000000000]
     
     if plot == True:
         plt.plot(radar_stamp_diffs * 1e-9)
