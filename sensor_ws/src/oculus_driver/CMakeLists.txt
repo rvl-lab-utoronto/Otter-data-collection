@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 project(oculus_driver VERSION 1.2.1)
 
 option(BUILD_TESTS "Build unit tests" OFF)
+option(BUILD_PYTHON "Build python bindings" OFF)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/DefaultBuildType.cmake)
 
 find_package(Boost COMPONENTS system thread REQUIRED)
@@ -71,8 +72,23 @@ export(EXPORT ${PROJECT_NAME}Targets
     FILE "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Targets.cmake"
 )
 
+if(BUILD_PYTHON)
+    add_subdirectory(python)
+
+    # Run the pip3 command to install the package
+    execute_process(
+        COMMAND pip3 install --user -e ${CMAKE_SOURCE_DIR}/python
+        RESULT_VARIABLE PIP_INSTALL_RESULT
+    )
+    # Check if the installation was successful
+    if(NOT PIP_INSTALL_RESULT EQUAL "0")
+        message(FATAL_ERROR "Failed to install oculus_driver_python package with pip3")
+    endif()
+endif()
+
 if(BUILD_TESTS)
     add_subdirectory(tests)
 endif()
+
 
 

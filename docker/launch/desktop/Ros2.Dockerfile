@@ -36,6 +36,7 @@ RUN rm -rf  /var/lib/apt/lists/* \
     libassimp-dev \
     xorg-dev \
     libbotan-2-dev \
+    ffmpeg \
     libglu1-mesa-dev 
 
 

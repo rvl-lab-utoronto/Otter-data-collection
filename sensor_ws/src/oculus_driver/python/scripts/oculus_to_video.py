@@ -22,7 +22,7 @@ args = parser.parse_args()
 
 if args.output is None:
     args.output = os.path.splitext(os.path.split(args.filename)[1])[0] + '.mp4'
-
+    
 print('Opening', args.filename)
 
 f = OculusFileReader(args.filename)
@@ -56,6 +56,7 @@ encoder = VideoEncoder(videoPath=args.output, frameRate=pingRate)
 
 while msg is not None:
     encoder.add_ping(msg)
+    
     msg = f.read_next_ping()
 encoder.finish()
 

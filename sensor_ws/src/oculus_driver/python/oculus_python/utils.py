@@ -110,11 +110,19 @@ class VideoEncoder:
         #                + " -i - -c:v libx264 -profile:v baseline"
         #                + " -pix_fmt yuv420p"
         #                + " -level:v 3 -b:v 2500 -an out_vid.h264")
+        #self.command = ("ffmpeg"
+        #               + " -f rawvideo -pix_fmt rgba"
+        #               + " -s " + str(frameShape[0]) + 'x' + str(frameShape[1]) 
+        #               + " -r " + str(frameRate)
+        #               + " -i - -c:v libx264 -vf fps=10"
+        #               + " -pix_fmt yuv420p"
+        #               + " " + self.path)
+        
         self.command = ("ffmpeg"
                        + " -f rawvideo -pix_fmt rgba"
                        + " -s " + str(frameShape[0]) + 'x' + str(frameShape[1]) 
                        + " -r " + str(frameRate)
-                       + " -i - -c:v libx264 -vf fps=10"
+                       + " -i - -c:v h264_nvenc -vf fps=10"
                        + " -pix_fmt yuv420p"
                        + " " + self.path)
         print("Encoder command : '" + self.command + "'", flush=True)

@@ -13,10 +13,10 @@ from ouster.sdk.client.core import ScanBatcher, LidarPacket, LidarScan, get_fiel
 
 
 
-output_dir = "/home/robot/synology/otter-utm/lidar"
+output_dir = "/home/robot/data/aug_22_field_data/lidar"
 # bag_path = "/mnt/goose/rosbag2_2024_08_22-17_32_04"
-#bag_path = "/home/robot/data/aug_22_field_data/rosbag2_2024_08_22-17_32_04"
-bag_path = "/home/robot/synology/tony/aug_16_test_utm_pond/all_sensors_utm_pond/rosbag2_2024_08_16-19_13_07"
+bag_path = "/home/robot/data/aug_22_field_data/rosbag2_2024_08_22-17_32_04"
+#bag_path = "/home/robot/synology/tony/aug_16_test_utm_pond/all_sensors_utm_pond/rosbag2_2024_08_16-19_13_07"
 #bag_path = "/home/robot/data/aug_23_field_data/rosbag2_2024_08_23-14_14_04"
 topic_name = "/ouster/lidar_packets"
 imu_topic_name = "/ouster/imu_packets"
@@ -64,6 +64,17 @@ def write_scan_binary_file(scan, file_path):
             f.write(struct.pack('f', point[6]))
             # range
             f.write(struct.pack('f', point[7]))
+            
+lidar_dtype = np.dtype([
+    ("x", np.float64),         
+    ("y", np.float64),         
+    ("z", np.float64),         
+    ("intensity", np.uint16),  
+    ("timestamp", np.uint64),  
+    ("reflectivity", np.uint16),  
+    ("ambient", np.uint16)     
+])  # 32 bytes per point
+
 
 # partially derived from ouster sdk
 def process_lidar_packets():
@@ -84,6 +95,7 @@ def process_lidar_packets():
     columns_per_packet = packet_format.columns_per_packet
     packets_per_frame = w // columns_per_packet
     field_types = get_field_types(sensor_info)
+    print(metadata)
     
     xyzlut = initialize_xyzlut(sensor_info)
 
@@ -131,11 +143,21 @@ def process_lidar_packets():
                     print("Stamps:", timestamps.shape, timestamps.dtype)
                     print("Reflectivity:", reflectivity_destaggered.shape, reflectivity_destaggered.dtype)
                     print("Ambient:", ambient_destaggered.shape, ambient_destaggered.dtype)
+                    
+                    data = np.empty(xyz.shape[0], dtype=lidar_dtype)
 
-                    bin_file = np.hstack([xyz, signal_destaggered, timestamps, reflectivity_destaggered, ambient_destaggered])
-                    filename = str(timestamps[timestamps.shape[0]//2][0])+".bin"
+                    data["x"] = xyz[:, 0]
+                    data["y"] = xyz[:, 1]
+                    data["z"] = xyz[:, 2]
+                    data["intensity"] = signal_destaggered.flatten().astype(np.uint16)
+                    data["timestamp"] = timestamps.flatten().astype(np.uint64)
+                    data["reflectivity"] = reflectivity_destaggered.flatten().astype(np.uint16)
+                    data["ambient"] = ambient_destaggered.flatten().astype(np.uint16)
+
+                    #filename = str(timestamps[timestamps.shape[0]//2][0])+".bin"
+                    filename = str(t)+".bin"
                     filename = os.path.join(output_dir, filename)
-                    bin_file.tofile(filename)
+                    data.tofile(filename)
                 
             except Exception as e:
                 print(f"Warning: Skipping corrupted packet. Error: {str(e)[:400]}")

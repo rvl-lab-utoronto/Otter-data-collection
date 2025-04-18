@@ -4,6 +4,8 @@ import argparse
 import matplotlib.animation as animation
 from PIL import Image
 from oculus_python.files import OculusFileReader
+from datetime import datetime, timezone
+import os
 
 def update_plot(frame, messages, ax1, ax2, ax3, ax4):
     bearings, linearAngles, gains, rawPingData, pingData, timestamp = messages[frame]
@@ -87,9 +89,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         prog='OculusFileReader',
         description='Create a video from .oculus file data.')
-    parser.add_argument('filename', type=str,
+    parser.add_argument('--filename', type=str,
                         help='Path to a .oculus file to display')
+
+    parser.add_argument('--outdir', type=str,
+                        help='output dir')
     args = parser.parse_args()
+    outdir = args.outdir
 
     print('Opening', args.filename)
     counter = 0
@@ -98,10 +104,11 @@ if __name__ == "__main__":
     messages = []
     timestamps = []
     msg = f.read_next_ping()
-
+    os.makedirs(outdir, exist_ok=True)
     while msg is not None:
-        timestamp = msg.timestamp_micros() * 1e-6
+        timestamp = msg.timestamp_micros() #* 1e-6
         timestamps.append(timestamp)
+        print(datetime.fromtimestamp(timestamp*1e-6, tz=timezone.utc))
 
         if counter < 0: # skip the part on land, for now, save everything
             msg = f.read_next_ping()
@@ -127,7 +134,7 @@ if __name__ == "__main__":
                 # normalized_data = ((rawPingData - rawPingData.min()) / (rawPingData.max() - rawPingData.min()) * 255).astype(np.uint8)
                 # print("is normalized data equal to rawPingData?", np.array_equal(normalized_data, rawPingData))
                 image = Image.fromarray(rawPingData)
-                image.save(f"output/images/{timestamp}.png")
+                image.save(outdir + f"/{timestamp}.png")
 
                 ## print the size of rawPingData
                 # print("rawPingData shape:", rawPingData.shape)
@@ -142,21 +149,22 @@ if __name__ == "__main__":
                 # print(np.array_equal(rawPingData, recovered_image_data))
 
                 # save a text file with all the other meta info in msg
-                with open(f"output/txt/{timestamp}.txt", "w") as t:
-                    t.write(f"timestamp: {timestamp}\n")
-                    t.write(f"ping_index: {msg.ping_index()}\n")
-                    t.write(f"range: {msg.range()}\n")
-                    t.write(f"gain_percent: {msg.gain_percent()}\n")
-                    t.write(f"frequency: {msg.frequency()}\n")
-                    t.write(f"speed_of_sound_used: {msg.speed_of_sound_used()}\n")
-                    t.write(f"range_resolution: {msg.range_resolution()}\n")
-                    t.write(f"temperature: {msg.temperature()}\n")
-                    t.write(f"pressure: {msg.pressure()}\n")
-                    t.write(f"bearing_data: {bearings}\n")
-                    t.write(f"linear_angles: {linearAngles}\n")
-                    # np.savetxt(t, rawPingData, delimiter=",", fmt="%d")
+                
+                #with open(f"output/txt/{timestamp}.txt", "w") as t:
+                #    t.write(f"timestamp: {timestamp}\n")
+                #    t.write(f"ping_index: {msg.ping_index()}\n")
+                #    t.write(f"range: {msg.range()}\n")
+                #    t.write(f"gain_percent: {msg.gain_percent()}\n")
+                #    t.write(f"frequency: {msg.frequency()}\n")
+                #    t.write(f"speed_of_sound_used: {msg.speed_of_sound_used()}\n")
+                #    t.write(f"range_resolution: {msg.range_resolution()}\n")
+                #    t.write(f"temperature: {msg.temperature()}\n")
+                #    t.write(f"pressure: {msg.pressure()}\n")
+                #    t.write(f"bearing_data: {bearings}\n")
+                #    t.write(f"linear_angles: {linearAngles}\n")
+                #    # np.savetxt(t, rawPingData, delimiter=",", fmt="%d")
 
-                    t.close()
+                #    t.close()
     
         counter += 1
         msg = f.read_next_ping()
