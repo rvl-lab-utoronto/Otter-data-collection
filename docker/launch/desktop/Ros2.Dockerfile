@@ -12,6 +12,7 @@ ENV force_color_prompt=yes
 #========================================
 # BASE PACKAGES
 #========================================
+
 RUN cat /etc/resolv.conf
 RUN cat /etc/apt/sources.list
 RUN rm -rf  /var/lib/apt/lists/* \
@@ -39,8 +40,10 @@ RUN rm -rf  /var/lib/apt/lists/* \
     ffmpeg \
     libglu1-mesa-dev 
 
-
-
+RUN add-apt-repository ppa:neovim-ppa/unstable \
+ && apt-get update \
+ && apt-get install -y neovim \
+ && apt-get clean
 #========================================
 # GUI DEPENDENCIES
 #========================================
@@ -73,7 +76,9 @@ RUN pip3 install \
     bluerobotics-ping \
     ouster-sdk \
     rosbags \
-    pyproj 
+    open3d \
+    pynvim \
+    pyproj  
 RUN pip3 install "numpy<1.24"
 
 ENV NODE_OPTIONS=--openssl-legacy-provider
@@ -105,17 +110,18 @@ RUN git clone https://github.com/utiasASRL/steam.git
 RUN mkdir ${SOURCE_DIR}/steam/build
 WORKDIR ${SOURCE_DIR}/steam/build
 RUN cmake -DUSE_AMENT=OFF ..
-RUN cmake --build .
+RUN cmake --build . -j 8
 RUN cmake --install .
 
 WORKDIR ${SOURCE_DIR}
-RUN git clone https://github.com/ENSTABretagneRobotics/oculus_driver.git
+RUN git clone https://github.com/forssea-robotics/oculus_driver.git
 RUN mkdir ${SOURCE_DIR}/oculus_driver/build
 WORKDIR ${SOURCE_DIR}/oculus_driver/build
 RUN cmake -DCMAKE_BUILD_TYPE=Release ..
 RUN make -j install
 WORKDIR ${SOURCE_DIR}/oculus_driver/python
 RUN pip install -e .
+
 #========================================
 # EMBREE AND DEPENDENCIES
 #========================================

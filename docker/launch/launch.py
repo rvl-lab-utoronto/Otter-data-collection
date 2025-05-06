@@ -72,8 +72,8 @@ def main(args):
 
     ## Run the container
     run_cmd = (
-        f"rocker --mode interactive --name {container_name} --user "
-        '--user-override-name=robot --net=host --env="DISPLAY" '
+        f"rocker --mode interactive --name {container_name}"
+        ' --net=host --env="DISPLAY" '
     )
     run_cmd += f'--volume "$HOME/.Xauthority:/root/.Xauthority:rw" '
     if args["device"] != "":

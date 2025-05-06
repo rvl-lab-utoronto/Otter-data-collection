@@ -36,10 +36,14 @@ RUN rm -rf  /var/lib/apt/lists/* \
     libassimp-dev \
     xorg-dev \
     libbotan-2-dev \
+    ffmpeg \
     libboost-all-dev \
-    pybind11-dev \
     libglu1-mesa-dev 
 
+RUN add-apt-repository ppa:neovim-ppa/unstable \
+ && apt-get update \
+ && apt-get install -y neovim \
+ && apt-get clean
 
 
 #========================================
@@ -63,7 +67,9 @@ ENV NODE_MAJOR=18
 RUN echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list
 RUN apt-get update
 RUN apt-get install nodejs -y
-RUN pip3 install \
+
+RUN python3 -m pip install --upgrade pip
+RUN pip3 install --ignore-installed \
     flask \
     flask_socketio \
     eventlet \
@@ -74,8 +80,10 @@ RUN pip3 install \
     bluerobotics-ping \
     ouster-sdk \
     rosbags \
-    pyproj 
-#RUN pip3 install "numpy<1.24"
+    open3d \
+    pynvim \
+    pyproj  
+RUN pip3 install "numpy<1.24"
 
 ENV NODE_OPTIONS=--openssl-legacy-provider
 #Fix rviz2 black screen issue
@@ -84,9 +92,9 @@ RUN add-apt-repository ppa:kisak/kisak-mesa && apt upgrade -y
 #========================================
 # FILE STRUCTURE
 #========================================
-#RUN mkdir /home/packages
-#ENV SOURCE_DIR="/home/packages" 
-#WORKDIR ${SOURCE_DIR}
+RUN mkdir /home/packages
+ENV SOURCE_DIR="/home/packages" 
+WORKDIR ${SOURCE_DIR}
 ##VOLUME ["${SOURCE_DIR}"]
 #ADD ../../NVIDIA-OptiX-SDK-7.3.0-linux64-x86_64.sh ${SOURCE_DIR}
 

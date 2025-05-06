@@ -1,10 +1,14 @@
 {
     "dockerfile": "desktop/zed.Dockerfile",
     "container-name": "ros2-humble",
-    "image-name": "zed_containers:zed-sdk12.1",
-    "base-image": "zed_ros2_desktop_image:latest",
+    "image-name": "hardware_dev:ros2-zed",
+    "base-image": "zed_ros2_desktop_u22.04_sdk_4.2.5_cuda_12.4.0:latest ",
     "mounts": {
-        "../..": "/home/robot",
-        "/media/blerim/capybara2/": "/home/robot/data"
+        "../..": "/root",
+        "/media/blerim/capybara4/": "/root/data",
+        "/media/diskstation/": "/root/synology",
+        "/home/blerim/boreas_dataset/": "/root/boreas_dataset",
+        "/home/blerim/.config/nvim/":"/root/.config/nvim",
+        "/home/blerim/.tmux.conf":"/root/.tmux.conf"
     }
 }

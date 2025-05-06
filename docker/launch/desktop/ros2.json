@@ -4,9 +4,11 @@
     "image-name": "ros:humble-desktop",
     "base-image": "osrf/ros:humble-desktop-full",
     "mounts": {
-        "../..": "/home/robot",
-        "/media/blerim/capybara3/": "/home/robot/data",
-        "/media/diskstation/": "/home/robot/synology",
-        "/home/blerim/boreas_dataset/": "/home/robot/boreas_dataset"
+        "../..": "/root",
+        "/media/blerim/capybara4/": "/root/data",
+        "/media/diskstation/": "/root/synology",
+        "/home/blerim/boreas_dataset/": "/root/boreas_dataset",
+        "/home/blerim/.config/nvim/":"/root/.config/nvim",
+        "/home/blerim/.tmux.conf":"/root/.tmux.conf"
     }
 }

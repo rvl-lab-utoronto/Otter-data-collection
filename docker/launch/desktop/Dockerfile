@@ -146,6 +146,10 @@ RUN make install
 #WORKDIR ${SOURCE_DIR}/rmagine/build
 #RUN make install
 
+#========================================
+# NEOVIM
+#========================================
+
 #
 #========================================
 # ENTER
